@@ -322,7 +322,7 @@ export default function AdminPage() {
   const getRowClass = (menu: Menu) => {
     if (menu.type === 'takeaway' || menu.category === '外卖包点') return 'bg-rose-50/50 hover:bg-rose-100 border-rose-100 text-rose-900 dark:bg-rose-900/10 dark:hover:bg-rose-900/20 dark:border-rose-900/30 dark:text-rose-100';
     if (menu.type === 'breakfast') return 'bg-amber-50/50 hover:bg-amber-100 border-amber-100 text-amber-900 dark:bg-amber-900/10 dark:hover:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-100';
-    if (menu.type === 'lunch') return 'bg-orange-50/50 hover:bg-orange-100 border-orange-100 text-orange-900 dark:bg-orange-900/10 dark:hover:bg-orange-900/20 dark:border-orange-900/30 dark:text-orange-100';
+    if (menu.type === 'lunch') return 'bg-green-50/50 hover:bg-green-100 border-green-100 text-green-900 dark:bg-green-900/10 dark:hover:bg-green-900/20 dark:border-green-900/30 dark:text-green-100';
     if (menu.type === 'dinner') return 'bg-blue-50/50 hover:bg-blue-100 border-blue-100 text-blue-900 dark:bg-blue-900/10 dark:hover:bg-blue-900/20 dark:border-blue-900/30 dark:text-blue-100';
     return 'hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-100';
   };
@@ -615,7 +615,10 @@ export default function AdminPage() {
                                                         <span className="text-xs text-orange-600 dark:text-orange-400 font-medium bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">{getDayName(item.date)}</span>
                                                     </div>
                                                     <div className="space-y-1 relative">
-                                                        {item.counts.map(c => (
+                                                        {[...item.counts].sort((a, b) => {
+                                                            const order: Record<string, number> = { 'breakfast': 1, 'lunch': 2, 'dinner': 3, 'takeaway': 4 };
+                                                            return (order[a.type] || 99) - (order[b.type] || 99);
+                                                        }).map(c => (
                                                             <div key={c.type} className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                                                                 <span>{c.type === 'breakfast' ? '早餐' : c.type === 'lunch' ? '午餐' : c.type === 'dinner' ? '晚餐' : '外卖包点'}</span>
                                                                 <span className="font-medium text-gray-700 dark:text-gray-300">{c.count}道</span>
@@ -667,6 +670,11 @@ export default function AdminPage() {
                                         type="date"
                                         value={editDate}
                                         onChange={e => setEditDate(e.target.value)}
+                                        onClick={(e) => {
+                                            try {
+                                                e.currentTarget.showPicker();
+                                            } catch {}
+                                        }}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
                                 </div>

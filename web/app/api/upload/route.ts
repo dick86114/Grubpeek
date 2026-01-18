@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { parseMenuFile } from '@/lib/parser';
-import db from '@/lib/db';
+import pool from '@/lib/db';
 
 const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
@@ -29,13 +29,16 @@ export async function POST(request: Request) {
     if (!action) {
         const dates = Array.from(new Set(menus.map((m: any) => m.date)));
         if (dates.length > 0) {
-            const placeholders = dates.map(() => '?').join(',');
-            const existing = db.prepare(`SELECT DISTINCT date FROM menus WHERE date IN (${placeholders})`).all(dates);
+            // Check if any of these dates already exist in DB
+            const { rows } = await pool.query(
+                'SELECT DISTINCT date::text FROM menus WHERE date = ANY($1::date[])',
+                [dates]
+            );
             
-            if (existing.length > 0) {
+            if (rows.length > 0) {
                  return NextResponse.json({ 
                     status: 'conflict', 
-                    dates: existing.map((r: any) => r.date),
+                    dates: rows.map((r: any) => r.date),
                     message: '检测到部分日期已有数据'
                 }, { status: 409 });
             }
@@ -66,33 +69,41 @@ export async function POST(request: Request) {
     }
 
     // Default or 'overwrite': Import to DB
-    const insert = db.prepare(`
-      INSERT INTO menus (date, type, category, name, is_featured, price)
-      VALUES (@date, @type, @category, @name, @is_featured, @price)
-    `);
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
 
-    const deleteOld = db.prepare('DELETE FROM menus WHERE date = ?');
+        // Find unique dates to clean up first
+        const dates = Array.from(new Set(menus.map((m: any) => m.date)));
+        
+        // Delete old data for these dates
+        if (dates.length > 0) {
+            await client.query('DELETE FROM menus WHERE date = ANY($1::date[])', [dates]);
+        }
 
-    const transaction = db.transaction((menus) => {
-      // Find unique dates to clean up first
-      const dates = new Set(menus.map((m: any) => m.date));
-      for (const date of dates) {
-        deleteOld.run(date);
-      }
-      
-      for (const menu of menus) {
-        insert.run({
-          date: menu.date,
-          type: menu.type,
-          category: menu.category,
-          name: menu.name,
-          is_featured: menu.is_featured ? 1 : 0,
-          price: menu.price
-        });
-      }
-    });
+        // Insert new data
+        for (const menu of menus) {
+            await client.query(`
+              INSERT INTO menus (date, type, category, name, is_featured, price, sort_order)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [
+                menu.date,
+                menu.type,
+                menu.category,
+                menu.name,
+                menu.is_featured ? 1 : 0,
+                menu.price,
+                menu.sort_order || 0
+            ]);
+        }
 
-    transaction(menus);
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
 
     return NextResponse.json({ success: true, count: menus.length, filename: file.name, imported: true });
   } catch (error: any) {

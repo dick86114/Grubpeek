@@ -21,8 +21,12 @@ npm ci
 ```
 
 ## 4. 环境变量配置
-本项目默认使用 SQLite，且配置项较少，通常无需复杂的 `.env` 配置。
-如果需要自定义端口，可以在启动时指定。
+本项目使用 PostgreSQL 数据库，可以通过环境变量进行配置。
+
+主要环境变量：
+- `DATABASE_URL`: 数据库连接字符串 (例如: `postgresql://user:password@host:port/dbname`)
+- `ADMIN_PASSWORD`: 管理员后台登录密码 (默认: `admin888`)
+- `MENU_DIR`: 菜单文件存储目录 (默认: `../menu` 或 `/app/data/menu`)
 
 ## 5. 构建与启动
 
@@ -71,10 +75,10 @@ pm2 logs grubpeek
 ```
 
 ## 7. 数据持久化
-应用的数据存储在项目根目录下的 `grubpeek.db` SQLite 数据库文件中。
+本项目使用 PostgreSQL 数据库存储数据。
 **重要提示：**
--   部署时请确保 `grubpeek.db` 文件所在目录具有**读写权限**。
--   **备份**：定期备份 `grubpeek.db` 文件即可完整备份所有菜单数据和系统设置。
+-   Docker 部署中，数据库数据默认存储在 `./data/postgres` 目录下。
+-   **备份**：定期备份该目录或使用 `pg_dump` 导出数据。
 -   `menu/` 目录用于临时存放上传的 Excel 文件，建议也定期备份。
 
 ## 8. Docker 部署 (推荐)
@@ -96,7 +100,7 @@ docker-compose up -d
 
 ### 8.3 数据持久化
 Docker 部署默认将数据挂载在当前目录下的 `data` 文件夹中：
-- `data/grubpeek.db`: 数据库文件
+- `data/postgres/`: PostgreSQL 数据库数据
 - `data/menu/`: 上传的 Excel 菜单文件
 
 如需备份，直接备份 `data` 目录即可。
@@ -111,15 +115,17 @@ docker-compose up -d
 
 在 `docker-compose.yml` 中可以配置以下环境变量：
 
-*   `DB_PATH`: 数据库文件路径，建议指向 `/app/data/grubpeek.db` 以便持久化。
+*   `DATABASE_URL`: PostgreSQL 数据库连接字符串。
+    *   格式：`postgresql://user:password@host:port/dbname`
+    *   默认使用内置数据库：`postgresql://grubpeek:grubpeek@db:5432/grubpeek`
 *   `MENU_DIR`: 菜单文件存储路径，建议指向 `/app/data/menu`。
 *   `ADMIN_PASSWORD`: **初始管理员密码**。仅在数据库首次初始化时生效，后续修改密码请在后台管理界面进行。默认值为 `admin888`。
 *   `TZ`: 时区设置，建议设置为 `Asia/Shanghai`。
 
 ### 8.6 自动初始化
 
-容器启动时会自动检查数据目录：
-1. 如果 `/app/data` 目录不存在，会自动创建。
-2. 如果数据库文件不存在，会自动初始化并应用 `ADMIN_PASSWORD` 设置的密码。
+容器启动时会自动检查数据库连接：
+1. 如果数据库表不存在，会自动创建并初始化。
+2. 自动应用 `ADMIN_PASSWORD` 设置的初始密码。
 
 

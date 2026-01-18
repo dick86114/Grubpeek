@@ -1,3 +1,4 @@
+version: '3'
 services:
   grubpeek:
     image: ghcr.io/dick86114/grubpeek:latest
@@ -6,9 +7,23 @@ services:
     ports:
       - "2618:2618"
     volumes:
-      - ./data:/app/data
+      - ./data/menu:/app/data/menu
     environment:
-      - DB_PATH=/app/data/grubpeek.db
+      - DATABASE_URL=postgresql://grubpeek:grubpeek@db:5432/grubpeek
       - MENU_DIR=/app/data/menu
-      - ADMIN_PASSWORD=admin888  # 设置初始管理员密码，仅在首次运行时生效
+      - ADMIN_PASSWORD=admin888
+      - TZ=Asia/Shanghai
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    container_name: grubpeek-db
+    restart: unless-stopped
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=grubpeek
+      - POSTGRES_PASSWORD=grubpeek
+      - POSTGRES_DB=grubpeek
       - TZ=Asia/Shanghai

@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { parseMenuFile } from '@/lib/parser';
-import db from '@/lib/db';
+import pool from '@/lib/db';
+
+const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +13,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Filename is required' }, { status: 400 });
     }
 
-    const filePath = path.join(process.cwd(), '../menu', filename);
+    const filePath = path.join(menuDir, filename);
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
@@ -19,34 +21,40 @@ export async function POST(request: Request) {
     const buffer = fs.readFileSync(filePath);
     const menus = parseMenuFile(buffer, filename);
 
-    // Transaction to insert data
-    const insert = db.prepare(`
-      INSERT INTO menus (date, type, category, name, is_featured, price)
-      VALUES (@date, @type, @category, @name, @is_featured, @price)
-    `);
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
 
-    const deleteOld = db.prepare('DELETE FROM menus WHERE date = ?');
+        // Find unique dates to clean up first
+        const dates = Array.from(new Set(menus.map((m: any) => m.date)));
+        
+        // Delete old data for these dates
+        if (dates.length > 0) {
+            await client.query('DELETE FROM menus WHERE date = ANY($1::date[])', [dates]);
+        }
 
-    const transaction = db.transaction((menus) => {
-      // Find unique dates to clean up first
-      const dates = new Set(menus.map((m: any) => m.date));
-      for (const date of dates) {
-        deleteOld.run(date);
-      }
-      
-      for (const menu of menus) {
-        insert.run({
-          date: menu.date,
-          type: menu.type,
-          category: menu.category,
-          name: menu.name,
-          is_featured: menu.is_featured ? 1 : 0,
-          price: menu.price
-        });
-      }
-    });
+        // Insert new data
+        for (const menu of menus) {
+            await client.query(`
+              INSERT INTO menus (date, type, category, name, is_featured, price)
+              VALUES ($1, $2, $3, $4, $5, $6)
+            `, [
+                menu.date,
+                menu.type,
+                menu.category,
+                menu.name,
+                menu.is_featured ? 1 : 0,
+                menu.price
+            ]);
+        }
 
-    transaction(menus);
+        await client.query('COMMIT');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        throw e;
+    } finally {
+        client.release();
+    }
 
     return NextResponse.json({ success: true, count: menus.length });
   } catch (error: any) {

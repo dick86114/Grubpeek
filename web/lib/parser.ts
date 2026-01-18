@@ -9,6 +9,7 @@ interface ParsedMenu {
   name: string;
   is_featured: boolean;
   price: number;
+  sort_order: number;
 }
 
 const WEEKDAYS = {
@@ -131,7 +132,8 @@ export function parseMenuFile(buffer: Buffer, filename: string): ParsedMenu[] {
                category: currentCategory,
                name: name,
                is_featured: name.includes('[特]'), // Check requirement
-               price: type === 'breakfast' ? 5 : type === 'lunch' ? 25 : type === 'dinner' ? 15 : 0
+               price: type === 'breakfast' ? 5 : type === 'lunch' ? 25 : type === 'dinner' ? 15 : 0,
+               sort_order: i * 1000 + colIndex // Use row index * 1000 + colIndex to maintain order
              });
           });
         }

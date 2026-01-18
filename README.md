@@ -39,7 +39,7 @@ GrubPeek 是一个现代化的食堂菜单展示系统，旨在为用户提供�
 
 *   **前端框架**: Next.js 16 (App Router)
 *   **UI 库**: React 19, Tailwind CSS v4
-*   **数据库**: SQLite (better-sqlite3)
+*   **数据库**: PostgreSQL (pg)
 *   **工具库**: 
     *   `xlsx` (Excel 处理)
     *   `date-fns` (日期处理)
@@ -76,21 +76,34 @@ npm run dev
 2.  **创建配置文件**：在部署目录下创建 `docker-compose.yml` 文件，内容如下：
 
     ```yaml
+    version: '3'
     services:
       grubpeek:
-        image: dick86114/grubpeek:latest
-        # 也可以使用GHCR的镜像包
-        # image: ghcr.io/dick86114/grubpeek:latest
+        image: ghcr.io/dick86114/grubpeek:latest
         container_name: grubpeek
         restart: unless-stopped
         ports:
           - "2618:2618"
         volumes:
-          - ./data:/app/data
+          - ./data/menu:/app/data/menu
         environment:
-          - DB_PATH=/app/data/grubpeek.db
+          - DATABASE_URL=postgresql://grubpeek:grubpeek@db:5432/grubpeek
           - MENU_DIR=/app/data/menu
-          - ADMIN_PASSWORD=admin888  # 设置初始管理员密码，仅在首次运行时生效
+          - ADMIN_PASSWORD=admin888
+          - TZ=Asia/Shanghai
+        depends_on:
+          - db
+
+      db:
+        image: postgres:15-alpine
+        container_name: grubpeek-db
+        restart: unless-stopped
+        volumes:
+          - ./data/postgres:/var/lib/postgresql/data
+        environment:
+          - POSTGRES_USER=grubpeek
+          - POSTGRES_PASSWORD=grubpeek
+          - POSTGRES_DB=grubpeek
           - TZ=Asia/Shanghai
     ```
 

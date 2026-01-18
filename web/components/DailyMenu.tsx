@@ -16,7 +16,7 @@ interface DailyMenuProps {
   loading?: boolean;
 }
 
-const MealSection = ({ title, time, price, items, colorTheme, icon: Icon, showPrice = true }: { title: string, time: string, price: number, items: Menu[], colorTheme: 'amber' | 'orange' | 'blue' | 'rose', icon: any, showPrice?: boolean }) => {
+const MealSection = ({ title, time, price, items, colorTheme, icon: Icon, showPrice = true }: { title: string, time: string, price: number, items: Menu[], colorTheme: 'amber' | 'orange' | 'blue' | 'rose' | 'green', icon: any, showPrice?: boolean }) => {
   // Group by category
   const grouped = items.reduce((acc, item) => {
     const cat = item.category || '其他';
@@ -39,6 +39,13 @@ const MealSection = ({ title, time, price, items, colorTheme, icon: Icon, showPr
       text: 'text-orange-900 dark:text-orange-100',
       icon: 'text-orange-500 dark:text-orange-400',
       price: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200'
+    },
+    green: {
+      bg: 'bg-green-50/50 dark:bg-green-900/10',
+      border: 'border-green-100 dark:border-green-900/30',
+      text: 'text-green-900 dark:text-green-100',
+      icon: 'text-green-500 dark:text-green-400',
+      price: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200'
     },
     blue: {
       bg: 'bg-blue-50/50 dark:bg-blue-900/10',
@@ -152,7 +159,7 @@ export function DailyMenu({ menus, loading }: DailyMenuProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
       <MealSection title="早餐" time="07:30 - 09:00" price={5} items={breakfast} colorTheme="amber" icon={Coffee} />
-      <MealSection title="午餐" time="11:30 - 13:00" price={25} items={lunch} colorTheme="orange" icon={Sun} />
+      <MealSection title="午餐" time="11:30 - 13:00" price={25} items={lunch} colorTheme="green" icon={Sun} />
       <MealSection title="晚餐" time="17:30 - 19:00" price={15} items={dinner} colorTheme="blue" icon={Moon} />
       <MealSection title="外卖包点" time="14:00 - 19:00" price={0} showPrice={false} items={takeaway} colorTheme="rose" icon={ShoppingBag} />
     </div>

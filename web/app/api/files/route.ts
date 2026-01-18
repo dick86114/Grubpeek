@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { extractDateFromFilename } from '@/lib/parser';
-import db from '@/lib/db';
-import { startOfWeek, endOfWeek, format } from 'date-fns';
 
 const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 

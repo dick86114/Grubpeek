@@ -6,7 +6,7 @@ import { zhCN } from 'date-fns/locale';
 import { Calendar } from '@/components/Calendar';
 import { DailyMenu } from '@/components/DailyMenu';
 import { Menu } from '@/types';
-import { Utensils } from 'lucide-react';
+import { Calendar as CalendarIcon, Utensils } from 'lucide-react';
 import HeaderControls from '@/components/HeaderControls';
 
 export default function Home() {
@@ -85,9 +85,25 @@ export default function Home() {
           </div>
           
           <div className="flex items-center gap-4 sm:gap-6">
-            <span className="text-sm font-bold text-gray-500 dark:text-gray-400 hidden sm:block bg-orange-50 dark:bg-gray-800 px-3 py-1 rounded-full border border-orange-100 dark:border-gray-700">
-              {format(selectedDate, 'yyyy年MM月dd日 EEEE', { locale: zhCN })}
-            </span>
+            <div className="relative group">
+                <div className="flex items-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-300 hidden sm:flex bg-orange-50 dark:bg-gray-800 px-4 py-1.5 rounded-full border border-orange-100 dark:border-gray-700 group-hover:border-orange-300 dark:group-hover:border-gray-500 transition-colors cursor-pointer shadow-sm">
+                    <CalendarIcon className="w-4 h-4 text-orange-500" />
+                    <span>{format(selectedDate, 'yyyy年MM月dd日 EEEE', { locale: zhCN })}</span>
+                </div>
+                <input 
+                    type="date" 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 hidden sm:block"
+                    value={format(selectedDate, 'yyyy-MM-dd')}
+                    onChange={(e) => {
+                         if(e.target.value) handleDateSelect(new Date(e.target.value));
+                    }}
+                    onClick={(e) => {
+                        try {
+                            e.currentTarget.showPicker();
+                        } catch {}
+                    }}
+                />
+            </div>
             
             <HeaderControls />
           </div>

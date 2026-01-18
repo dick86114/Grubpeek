@@ -41,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 grubpeek.db
+check_db.js
