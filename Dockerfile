@@ -45,7 +45,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Ensure libc6-compat is available for better-sqlite3
 RUN apk add --no-cache libc6-compat
 
-USER nextjs
+# Create data directory for uploads
+RUN mkdir -p /app/data/menu && chown -R nextjs:nodejs /app/data
+
+# USER nextjs
+# Running as root to avoid permission issues with bind mounts on host
+# If you want to run as non-root, ensure the host directory ./data/menu is writable by UID 1001
 
 EXPOSE 2618
 
