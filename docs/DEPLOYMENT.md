@@ -90,6 +90,9 @@ pm2 logs grubpeek
 ```bash
 docker-compose up -d
 ```
+服务启动后，默认运行在 **2618** 端口。您可以通过浏览器访问 `http://服务器IP:2618`。
+
+如果需要修改端口，请编辑 `docker-compose.yml` 文件中的 `ports` 映射，例如将 `2618:2618` 改为 `8080:2618`。
 
 ### 8.3 数据持久化
 Docker 部署默认将数据挂载在当前目录下的 `data` 文件夹中：

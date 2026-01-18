@@ -68,6 +68,18 @@ npm run dev
 
 ### 生产环境部署
 
+#### Docker 部署 (推荐)
+
+只需一个命令即可启动：
+
+```bash
+docker-compose up -d
+```
+
+默认运行在 `2618` 端口。详细说明请参考 [部署手册](docs/DEPLOYMENT.md)。
+
+#### 常规部署
+
 请参考 [部署手册](docs/DEPLOYMENT.md)。
 
 ## 📂 目录结构
