@@ -61,3 +61,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #A8A29E;
 }
+
+/* Hide Next.js Development Indicators */
+body > [data-nextjs-toast],
+body > [data-nextjs-scroll-restoration-prevention] + div,
+nextjs-portal,
+#next-route-announcer + div,
+[data-nextjs-dialog-overlay] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}

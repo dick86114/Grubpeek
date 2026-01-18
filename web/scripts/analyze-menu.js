@@ -2,7 +2,7 @@ const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 
-const menuDir = path.join(__dirname, '../menu');
+const menuDir = path.join(__dirname, '../../menu');
 const files = fs.readdirSync(menuDir);
 const etFile = files.find(f => f.endsWith('.et') || f.endsWith('.xlsx'));
 
