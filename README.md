@@ -68,19 +68,42 @@ npm run dev
 
 ### 生产环境部署
 
-#### Docker 部署 (推荐)
+#### 🐳 Docker Compose 部署 (推荐)
 
-只需一个命令即可启动：
+这是最简单、最快捷的部署方式。
 
-```bash
-docker-compose up -d
-```
+1.  **准备环境**：确保服务器已安装 Docker 和 Docker Compose。
+2.  **创建配置文件**：在部署目录下创建 `docker-compose.yml` 文件，内容如下：
 
-默认运行在 `2618` 端口。详细说明请参考 [部署手册](docs/DEPLOYMENT.md)。
+    ```yaml
+    services:
+      grubpeek:
+        image: dick86114/grubpeek:latest
+        # 也可以使用GHCR的镜像包
+        # image: ghcr.io/dick86114/grubpeek:latest
+        container_name: grubpeek
+        restart: unless-stopped
+        ports:
+          - "2618:2618"
+        volumes:
+          - ./data:/app/data
+        environment:
+          - DB_PATH=/app/data/grubpeek.db
+          - MENU_DIR=/app/data/menu
+          - TZ=Asia/Shanghai
+    ```
 
-#### 常规部署
+3.  **启动服务**：
 
-请参考 [部署手册](docs/DEPLOYMENT.md)。
+    ```bash
+    docker-compose up -d
+    ```
+
+4.  **访问应用**：浏览器访问 `http://服务器IP:2618`。
+
+#### 常规部署 (Node.js)
+
+如果您不使用 Docker，请参考 [部署手册](docs/DEPLOYMENT.md) 进行手动部署。
 
 ## 📂 目录结构
 
