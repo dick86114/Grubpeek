@@ -6,10 +6,14 @@ GrubPeek 是一个现代化的食堂菜单展示系统，旨在为用户提供�
 
 效果图请参阅 `imgs` 目录：
 
-*   [首页](imgs/index.png)
-*   [暗黑模式](imgs/index2.png)
-*   [模式切换](imgs/change.png)
-*   [后台管理](imgs/system.png)
+首页
+![alt text](imgs/index.png)
+暗黑模式
+![alt text](imgs/index2.png)
+模式切换
+![alt text](imgs/change.png)
+后台管理
+![alt text](imgs/system.png)
 
 ## 📖 文档导航
 
