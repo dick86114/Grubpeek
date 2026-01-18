@@ -142,7 +142,7 @@ export default function Home() {
                    {format(selectedDate, 'M月d日', { locale: zhCN })} 菜单
                 </h2>
              </div>
-            <DailyMenu menus={dailyMenus} loading={loading} />
+            <DailyMenu menus={dailyMenus.map(m => ({ ...m, id: String(m.id) }))} loading={loading} />
           </div>
         </div>
       </main>
