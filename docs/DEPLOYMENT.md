@@ -77,43 +77,30 @@ pm2 logs grubpeek
 -   **备份**：定期备份 `grubpeek.db` 文件即可完整备份所有菜单数据和系统设置。
 -   `menu/` 目录用于临时存放上传的 Excel 文件，建议也定期备份。
 
-## 8. Docker 部署 (可选)
-如果使用 Docker，请参考以下 `Dockerfile` 示例：
+## 8. Docker 部署 (推荐)
 
-```dockerfile
-FROM node:18-alpine AS base
+本项目支持 Docker 部署，提供了 `docker-compose.yml` 文件一键启动。
 
-# Install dependencies only when needed
-FROM base AS deps
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
+### 8.1 准备工作
+1. 确保服务器已安装 Docker 和 Docker Compose。
+2. 创建一个部署目录（例如 `grubpeek_deploy`），并将 `docker-compose.yml` 文件放入该目录。
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
-
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV production
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-EXPOSE 3000
-ENV PORT 3000
-
-CMD ["node", "server.js"]
-```
-
-构建并运行：
+### 8.2 启动服务
+在部署目录下运行：
 ```bash
-docker build -t grubpeek .
-docker run -d -p 3000:3000 -v $(pwd)/grubpeek.db:/app/grubpeek.db grubpeek
+docker-compose up -d
 ```
-*注意：需挂载数据库文件以持久化数据。*
+
+### 8.3 数据持久化
+Docker 部署默认将数据挂载在当前目录下的 `data` 文件夹中：
+- `data/grubpeek.db`: 数据库文件
+- `data/menu/`: 上传的 Excel 菜单文件
+
+如需备份，直接备份 `data` 目录即可。
+
+### 8.4 镜像更新
+```bash
+docker-compose pull
+docker-compose up -d
+```
+

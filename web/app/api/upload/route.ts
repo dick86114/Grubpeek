@@ -4,7 +4,7 @@ import path from 'path';
 import { parseMenuFile } from '@/lib/parser';
 import db from '@/lib/db';
 
-const menuDir = path.join(process.cwd(), '../menu');
+const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
 export async function POST(request: Request) {
   try {

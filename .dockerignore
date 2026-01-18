@@ -1,0 +1,9 @@
+node_modules
+.next
+web/.next
+web/node_modules
+.git
+.github
+docs
+scripts
+*.log

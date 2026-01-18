@@ -5,7 +5,7 @@ import { extractDateFromFilename } from '@/lib/parser';
 import db from '@/lib/db';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 
-const menuDir = path.join(process.cwd(), '../menu');
+const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
 export async function GET() {
   try {

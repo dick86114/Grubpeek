@@ -1,0 +1,13 @@
+services:
+  grubpeek:
+    image: ghcr.io/dick86114/grubpeek:latest
+    container_name: grubpeek
+    restart: unless-stopped
+    ports:
+      - "2618:2618"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/grubpeek.db
+      - MENU_DIR=/app/data/menu
+      - TZ=Asia/Shanghai

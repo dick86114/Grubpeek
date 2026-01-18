@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const menuDir = path.join(process.cwd(), '../menu');
+const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
 export async function GET(request: Request) {
   try {
