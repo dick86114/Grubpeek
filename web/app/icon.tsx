@@ -1,17 +1,30 @@
 import { ImageResponse } from 'next/og'
  
-// Image metadata
-export const size = {
-  width: 32,
-  height: 32,
+export function generateImageMetadata() {
+  return [
+    {
+      contentType: 'image/png',
+      size: { width: 32, height: 32 },
+      id: 'small',
+    },
+    {
+      contentType: 'image/png',
+      size: { width: 192, height: 192 },
+      id: 'medium',
+    },
+    {
+      contentType: 'image/png',
+      size: { width: 512, height: 512 },
+      id: 'large',
+    },
+  ]
 }
-export const contentType = 'image/png'
  
-// Image generation
-export default function Icon() {
+export default function Icon({ id }: { id: string }) {
+  const size = id === 'small' ? 32 : id === 'medium' ? 192 : 512;
+  
   return new ImageResponse(
     (
-      // ImageResponse JSX element
       <div
         style={{
           background: '#f97316', // orange-500
@@ -21,13 +34,13 @@ export default function Icon() {
           alignItems: 'center',
           justifyContent: 'center',
           color: 'white',
-          borderRadius: '8px',
+          borderRadius: id === 'small' ? '8px' : '18%', // Rounder corners for larger icons (like iOS)
         }}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
+          width={size * 0.625}
+          height={size * 0.625}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -41,9 +54,9 @@ export default function Icon() {
         </svg>
       </div>
     ),
-    // ImageResponse options
     {
-      ...size,
+      width: size,
+      height: size,
     }
   )
 }
