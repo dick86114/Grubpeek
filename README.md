@@ -90,6 +90,7 @@ npm run dev
         environment:
           - DB_PATH=/app/data/grubpeek.db
           - MENU_DIR=/app/data/menu
+          - ADMIN_PASSWORD=admin888  # 设置初始管理员密码，仅在首次运行时生效
           - TZ=Asia/Shanghai
     ```
 

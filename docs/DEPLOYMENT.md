@@ -107,3 +107,19 @@ docker-compose pull
 docker-compose up -d
 ```
 
+### 8.5 环境变量说明
+
+在 `docker-compose.yml` 中可以配置以下环境变量：
+
+*   `DB_PATH`: 数据库文件路径，建议指向 `/app/data/grubpeek.db` 以便持久化。
+*   `MENU_DIR`: 菜单文件存储路径，建议指向 `/app/data/menu`。
+*   `ADMIN_PASSWORD`: **初始管理员密码**。仅在数据库首次初始化时生效，后续修改密码请在后台管理界面进行。默认值为 `admin888`。
+*   `TZ`: 时区设置，建议设置为 `Asia/Shanghai`。
+
+### 8.6 自动初始化
+
+容器启动时会自动检查数据目录：
+1. 如果 `/app/data` 目录不存在，会自动创建。
+2. 如果数据库文件不存在，会自动初始化并应用 `ADMIN_PASSWORD` 设置的密码。
+
+
