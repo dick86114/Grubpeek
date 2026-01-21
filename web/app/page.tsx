@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, endOfMonth, addDays, subDays, isSameMonth } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Calendar } from '@/components/Calendar';
@@ -17,6 +17,8 @@ export default function Home() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [manualCopyPayload, setManualCopyPayload] = useState<{ title: string; text: string; html: string } | null>(null);
+  const manualCopyRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync currentMonth when selectedDate changes (if it's in a different month)
   // But be careful not to create loops. If user manually changed month, don't force it back unless they click a date.
@@ -79,13 +81,15 @@ export default function Home() {
   }, [shareStatus]);
 
   useEffect(() => {
-    if (!shareOpen) return;
+    if (!shareOpen && !manualCopyPayload) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShareOpen(false);
+      if (e.key !== 'Escape') return;
+      setShareOpen(false);
+      setManualCopyPayload(null);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [shareOpen]);
+  }, [shareOpen, manualCopyPayload]);
 
   const escapeHtml = (s: string) =>
     s
@@ -166,6 +170,7 @@ export default function Home() {
     const dateTitle = format(selectedDate, 'yyyy年M月d日 EEEE', { locale: zhCN });
     const title = `${dateTitle} · ${meta.label}菜单`;
     const groups = groupByCategory(items);
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
     const categoryBlocks = Object.entries(groups)
       .map(([category, dishes]) => {
@@ -190,7 +195,6 @@ export default function Home() {
       .join('');
 
     const brand = 'GrubPeek';
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const footerLine = origin ? `<div style="margin-top:14px;font-size:12px;color:rgba(17,24,39,0.45);font-weight:700;">${escapeHtml(brand)} · ${escapeHtml(origin)}</div>` : `<div style="margin-top:14px;font-size:12px;color:rgba(17,24,39,0.45);font-weight:700;">${escapeHtml(brand)}</div>`;
 
     const html = `<div style="max-width:560px;border-radius:20px;padding:18px 18px 16px 18px;background:linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,255,255,0.92)), radial-gradient(900px 200px at 0% 0%,rgba(249,115,22,0.18),transparent 65%), radial-gradient(700px 220px at 100% 0%,rgba(16,185,129,0.18),transparent 62%), radial-gradient(700px 220px at 100% 100%,rgba(59,130,246,0.16),transparent 60%), radial-gradient(600px 200px at 0% 100%,rgba(244,63,94,0.16),transparent 60%);border:1px solid rgba(17,24,39,0.08);box-shadow:0 18px 50px rgba(17,24,39,0.12);">
@@ -215,17 +219,58 @@ export default function Home() {
       })
       .join('\n');
 
-    const text = [`【${meta.label}】${dateTitle}`, textGroups || '- 暂无数据', '— https://eat.059166.xyz:888/'].join('\n');
+    const text = [
+      `【${meta.label}】${dateTitle}`,
+      textGroups || '- 暂无数据',
+      origin ? `— ${origin}` : '— GrubPeek',
+    ].join('\n');
 
     return { html, text, count: items.length };
+  };
+
+  const legacyCopyText = (text: string) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-1000px';
+    textarea.style.left = '-1000px';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    } finally {
+      document.body.removeChild(textarea);
+    }
+    return ok;
+  };
+
+  const openShareWindow = (html: string, title: string) => {
+    const w = window.open('', '_blank', 'noopener,noreferrer');
+    if (!w) return false;
+    w.document.open();
+    w.document.write(
+      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${escapeHtml(
+        title,
+      )}</title></head><body style="margin:0;padding:24px;background:#fff;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;">${html}</body></html>`,
+    );
+    w.document.close();
+    return true;
   };
 
   const copyShare = async (type: Menu['type']) => {
     if (isCopying) return;
     setIsCopying(true);
+    const meta = mealMeta.find(m => m.type === type)!;
+    const payload = buildSharePayload(type);
     try {
-      const meta = mealMeta.find(m => m.type === type)!;
-      const payload = buildSharePayload(type);
       if (payload.count === 0) {
         setShareStatus({ type: 'error', message: `${meta.label}没有菜品数据` });
         return;
@@ -236,7 +281,25 @@ export default function Home() {
           ? (window as unknown as { ClipboardItem: typeof ClipboardItem }).ClipboardItem
           : null;
 
-      if (navigator.clipboard && 'write' in navigator.clipboard && ClipboardItemCtor) {
+      const isWeChat = typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent);
+
+      if (isWeChat) {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(payload.text);
+        } else {
+          const ok = legacyCopyText(payload.text);
+          if (!ok) {
+            setShareOpen(false);
+            setManualCopyPayload({
+              title: `${meta.label} · ${format(selectedDate, 'yyyy年M月d日', { locale: zhCN })}`,
+              text: payload.text,
+              html: payload.html,
+            });
+            setShareStatus({ type: 'error', message: '当前环境禁止自动写入剪贴板，请手动复制' });
+            return;
+          }
+        }
+      } else if (navigator.clipboard && 'write' in navigator.clipboard && ClipboardItemCtor) {
         const item = new ClipboardItemCtor({
           'text/html': new Blob([payload.html], { type: 'text/html' }),
           'text/plain': new Blob([payload.text], { type: 'text/plain' }),
@@ -250,9 +313,27 @@ export default function Home() {
       }
 
       setShareOpen(false);
+      setManualCopyPayload(null);
       setShareStatus({ type: 'success', message: `${meta.label}分享已复制` });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : '';
+      const isPolicyBlocked =
+        /permissions policy/i.test(message) || /clipboard api has been blocked/i.test(message) || /notallowederror/i.test(message);
+
+      if (isPolicyBlocked) {
+        const ok = legacyCopyText(payload.text);
+        if (ok) {
+          setShareOpen(false);
+          setManualCopyPayload(null);
+          setShareStatus({ type: 'success', message: `${meta.label}已复制（纯文本）` });
+          return;
+        }
+        setShareOpen(false);
+        setManualCopyPayload({ title: `${meta.label} · ${format(selectedDate, 'yyyy年M月d日', { locale: zhCN })}`, text: payload.text, html: payload.html });
+        setShareStatus({ type: 'error', message: '当前环境禁止自动写入剪贴板，请手动复制' });
+        return;
+      }
+
       setShareStatus({ type: 'error', message: message ? `复制失败：${message}` : '复制失败' });
     } finally {
       setIsCopying(false);
@@ -460,7 +541,76 @@ export default function Home() {
                 </div>
 
                 <div className="mt-4 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                  复制内容包含“富文本 + 纯文本”，在不支持富文本的应用里会自动降级为纯文本。
+                  复制内容包含“富文本 + 纯文本”。若环境限制剪贴板写入，会自动尝试纯文本复制或提供手动复制。
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {manualCopyPayload && (
+        <div className="fixed inset-0 z-50">
+          <button
+            className="absolute inset-0 bg-black/20 dark:bg-black/55 backdrop-blur-[2px]"
+            onClick={() => setManualCopyPayload(null)}
+            aria-label="关闭"
+          />
+          <div className="absolute inset-x-0 bottom-0 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-[92vw] sm:max-w-lg">
+            <div className="bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-gray-200/70 dark:border-gray-800 overflow-hidden">
+              <div className="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800 flex items-start justify-between">
+                <div className="min-w-0">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="text-[11px] font-extrabold tracking-[0.18em] text-gray-400 dark:text-gray-500">COPY</span>
+                    <span className="h-[1px] w-10 bg-gray-200 dark:bg-gray-800" />
+                  </div>
+                  <div className="mt-2 text-lg font-bold text-gray-900 dark:text-gray-100 font-serif">手动复制</div>
+                  <div className="mt-1 text-xs font-bold text-gray-400 dark:text-gray-500 truncate">{manualCopyPayload.title}</div>
+                </div>
+                <button
+                  onClick={() => setManualCopyPayload(null)}
+                  className="ml-4 p-2 rounded-xl text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors shrink-0"
+                  title="关闭"
+                  aria-label="关闭"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 pb-[calc(20px+env(safe-area-inset-bottom))] space-y-3">
+                <textarea
+                  ref={manualCopyRef}
+                  readOnly
+                  value={manualCopyPayload.text}
+                  className="w-full h-44 resize-none rounded-2xl border border-gray-200/70 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/40"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      const el = manualCopyRef.current;
+                      if (!el) return;
+                      el.focus();
+                      el.select();
+                      try {
+                        el.setSelectionRange(0, el.value.length);
+                      } catch {}
+                    }}
+                    className="w-full rounded-2xl border border-gray-200/70 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/60 active:scale-[0.99] transition-all px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-200"
+                  >
+                    全选
+                  </button>
+                  <button
+                    onClick={() => {
+                      const ok = openShareWindow(manualCopyPayload.html, manualCopyPayload.title);
+                      setShareStatus({ type: ok ? 'success' : 'error', message: ok ? '已打开分享页' : '打开分享页失败' });
+                    }}
+                    className="w-full rounded-2xl border border-orange-200/70 dark:border-orange-900/40 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100/70 dark:hover:bg-orange-900/30 active:scale-[0.99] transition-all px-4 py-3 text-sm font-bold text-orange-700 dark:text-orange-200"
+                  >
+                    打开分享页
+                  </button>
+                </div>
+                <div className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                  你的浏览器/容器环境对剪贴板写入做了限制。点“全选”后复制即可；也可以打开分享页再复制。
                 </div>
               </div>
             </div>

@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "clipboard-write=(self)",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);
