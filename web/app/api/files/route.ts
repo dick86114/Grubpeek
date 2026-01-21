@@ -38,8 +38,9 @@ export async function DELETE(request: Request) {
       // Just delete the file, do NOT delete DB data
       try {
         fs.unlinkSync(filePath);
-      } catch (err: any) {
-        if (err.code === 'EBUSY' || err.code === 'EPERM') {
+      } catch (err: unknown) {
+        const e = err as NodeJS.ErrnoException;
+        if (e.code === 'EBUSY' || e.code === 'EPERM') {
             return NextResponse.json({ error: '文件正被占用，请关闭文件后重试' }, { status: 423 }); // 423 Locked
         }
         throw err;
@@ -48,7 +49,8 @@ export async function DELETE(request: Request) {
     } else {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

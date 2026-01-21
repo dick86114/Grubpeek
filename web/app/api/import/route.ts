@@ -6,6 +6,16 @@ import pool from '@/lib/db';
 
 const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
+type ParsedMenu = {
+  date: string;
+  type: 'breakfast' | 'lunch' | 'dinner' | 'takeaway';
+  category: string;
+  name: string;
+  is_featured: boolean;
+  price: number;
+  sort_order: number;
+};
+
 export async function POST(request: Request) {
   try {
     const { filename } = await request.json();
@@ -19,14 +29,14 @@ export async function POST(request: Request) {
     }
 
     const buffer = fs.readFileSync(filePath);
-    const menus = parseMenuFile(buffer, filename);
+    const menus = parseMenuFile(buffer, filename) as ParsedMenu[];
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
         // Find unique dates to clean up first
-        const dates = Array.from(new Set(menus.map((m: any) => m.date)));
+        const dates = Array.from(new Set(menus.map(m => m.date)));
         
         // Delete old data for these dates
         if (dates.length > 0) {
@@ -36,15 +46,16 @@ export async function POST(request: Request) {
         // Insert new data
         for (const menu of menus) {
             await client.query(`
-              INSERT INTO menus (date, type, category, name, is_featured, price)
-              VALUES ($1, $2, $3, $4, $5, $6)
+              INSERT INTO menus (date, type, category, name, is_featured, price, sort_order)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
             `, [
                 menu.date,
                 menu.type,
                 menu.category,
                 menu.name,
                 menu.is_featured ? 1 : 0,
-                menu.price
+                menu.price,
+                menu.sort_order || 0
             ]);
         }
 
@@ -57,8 +68,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, count: menus.length });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Import error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

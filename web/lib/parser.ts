@@ -1,6 +1,5 @@
 import * as XLSX from 'xlsx';
-import { addDays, format, getDay, parse, setYear, isValid } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { addDays, format, getDay, isValid } from 'date-fns';
 
 interface ParsedMenu {
   date: string;
@@ -44,7 +43,8 @@ export function parseMenuFile(buffer: Buffer, filename: string): ParsedMenu[] {
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
-  const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+  type Cell = string | number | boolean | Date | null | undefined;
+  const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as Cell[][];
 
   const anchorDate = extractDateFromFilename(filename);
   if (!anchorDate || !isValid(anchorDate)) {

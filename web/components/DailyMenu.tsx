@@ -16,7 +16,7 @@ interface DailyMenuProps {
   loading?: boolean;
 }
 
-const MealSection = ({ title, time, price, items, colorTheme, icon: Icon, showPrice = true }: { title: string, time: string, price: number, items: Menu[], colorTheme: 'amber' | 'orange' | 'blue' | 'rose' | 'green', icon: any, showPrice?: boolean }) => {
+const MealSection = ({ title, time, price, items, colorTheme, icon: Icon, showPrice = true }: { title: string, time: string, price: number, items: Menu[], colorTheme: 'amber' | 'orange' | 'blue' | 'rose' | 'green', icon: React.ComponentType<{ className?: string }>, showPrice?: boolean }) => {
   // Group by category
   const grouped = items.reduce((acc, item) => {
     const cat = item.category || '其他';

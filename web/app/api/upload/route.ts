@@ -6,6 +6,16 @@ import pool from '@/lib/db';
 
 const menuDir = process.env.MENU_DIR || path.join(process.cwd(), '../menu');
 
+type ParsedMenu = {
+  date: string;
+  type: 'breakfast' | 'lunch' | 'dinner' | 'takeaway';
+  category: string;
+  name: string;
+  is_featured: boolean;
+  price: number;
+  sort_order: number;
+};
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -18,16 +28,17 @@ export async function POST(request: Request) {
 
     // Parse file in memory first to check dates
     const buffer = Buffer.from(await file.arrayBuffer());
-    let menus: any[] = [];
+    let menus: ParsedMenu[] = [];
     try {
-        menus = parseMenuFile(buffer, file.name);
-    } catch (e: any) {
-        return NextResponse.json({ error: '解析文件失败: ' + e.message }, { status: 400 });
+        menus = parseMenuFile(buffer, file.name) as ParsedMenu[];
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : '未知错误';
+        return NextResponse.json({ error: '解析文件失败: ' + message }, { status: 400 });
     }
 
     // Check for existing data if no explicit action
     if (!action) {
-        const dates = Array.from(new Set(menus.map((m: any) => m.date)));
+        const dates = Array.from(new Set(menus.map(m => m.date)));
         if (dates.length > 0) {
             // Check if any of these dates already exist in DB
             const { rows } = await pool.query(
@@ -38,7 +49,7 @@ export async function POST(request: Request) {
             if (rows.length > 0) {
                  return NextResponse.json({ 
                     status: 'conflict', 
-                    dates: rows.map((r: any) => r.date),
+                    dates: rows.map((r: { date: string }) => r.date),
                     message: '检测到部分日期已有数据'
                 }, { status: 409 });
             }
@@ -55,8 +66,9 @@ export async function POST(request: Request) {
     // Save file to disk (always save)
     try {
         fs.writeFileSync(filePath, buffer);
-    } catch (e: any) {
-        if (e.code === 'EBUSY') {
+    } catch (e: unknown) {
+        const err = e as NodeJS.ErrnoException;
+        if (err.code === 'EBUSY') {
              return NextResponse.json({ error: '文件正被占用，无法写入，请关闭后重试' }, { status: 423 });
         }
         throw e;
@@ -74,7 +86,7 @@ export async function POST(request: Request) {
         await client.query('BEGIN');
 
         // Find unique dates to clean up first
-        const dates = Array.from(new Set(menus.map((m: any) => m.date)));
+        const dates = Array.from(new Set(menus.map(m => m.date)));
         
         // Delete old data for these dates
         if (dates.length > 0) {
@@ -106,8 +118,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, count: menus.length, filename: file.name, imported: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Upload/Import error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

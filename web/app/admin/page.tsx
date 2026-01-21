@@ -155,6 +155,11 @@ export default function AdminPage() {
       .then(data => setDailyMenus(data.menus || []));
   };
 
+  const normalizeMenuType = (value: string): Menu['type'] => {
+    if (value === 'breakfast' || value === 'lunch' || value === 'dinner' || value === 'takeaway') return value;
+    return 'breakfast';
+  };
+
   // Process queue
   useEffect(() => {
     if (uploadQueue.length > 0 && !uploading && !conflictData) {
@@ -198,8 +203,9 @@ export default function AdminPage() {
       setUploadQueue(prev => prev.slice(1));
       setConflictData(null);
 
-    } catch (e: any) {
-      setUploadResults(prev => [...prev, { name: file.name, type: 'error', message: `系统错误: ${e.message}` }]);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '未知错误';
+      setUploadResults(prev => [...prev, { name: file.name, type: 'error', message: `系统错误: ${message}` }]);
       setUploadQueue(prev => prev.slice(1));
     } finally {
       setUploading(false);
@@ -707,7 +713,7 @@ export default function AdminPage() {
                                             <td className="p-3">
                                             <select 
                                                 value={editingItem.type} 
-                                                onChange={e => setEditingItem({...editingItem, type: e.target.value as any})}
+                                                onChange={e => setEditingItem({...editingItem, type: normalizeMenuType(e.target.value)})}
                                                 className="border border-orange-200 dark:border-gray-600 p-2 rounded-lg w-full text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none dark:bg-gray-700 dark:text-white"
                                             >
                                                 <option value="breakfast">早餐</option>
@@ -779,7 +785,7 @@ export default function AdminPage() {
                     <td className="p-3">
                       <select 
                         value={newItem.type} 
-                        onChange={e => setNewItem({...newItem, type: e.target.value as any})}
+                        onChange={e => setNewItem({...newItem, type: normalizeMenuType(e.target.value)})}
                         className="border border-orange-200 dark:border-orange-800 p-2 rounded-lg w-full text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       >
                         <option value="breakfast">早餐</option>
