@@ -17,7 +17,7 @@ export default function Home() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isCopying, setIsCopying] = useState(false);
-  const [manualCopyPayload, setManualCopyPayload] = useState<{ title: string; text: string; html: string } | null>(null);
+  const [manualCopyPayload, setManualCopyPayload] = useState<{ title: string; text: string } | null>(null);
   const manualCopyRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync currentMonth when selectedDate changes (if it's in a different month)
@@ -91,14 +91,6 @@ export default function Home() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [shareOpen, manualCopyPayload]);
 
-  const escapeHtml = (s: string) =>
-    s
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
   const groupByCategory = (items: Menu[]) =>
     items.reduce((acc, item) => {
       const category = item.category?.trim() || '其他';
@@ -168,49 +160,8 @@ export default function Home() {
     const meta = mealMeta.find(m => m.type === type)!;
     const items = filterShareItems(type);
     const dateTitle = format(selectedDate, 'yyyy年M月d日 EEEE', { locale: zhCN });
-    const title = `${dateTitle} · ${meta.label}菜单`;
     const groups = groupByCategory(items);
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-
-    const categoryBlocks = Object.entries(groups)
-      .map(([category, dishes]) => {
-        const chips = dishes
-          .map(d => {
-            const isFeatured = !!d.is_featured;
-            const text = escapeHtml(d.name);
-            return `<span style="display:inline-block;margin:6px 8px 0 0;padding:7px 10px;border-radius:999px;border:1px solid ${isFeatured ? '#FCA5A5' : meta.chipBorder};background:${isFeatured ? '#FEF2F2' : meta.chipBg};color:${isFeatured ? '#B91C1C' : '#111827'};font-size:13px;line-height:1;white-space:nowrap;">${text}</span>`;
-          })
-          .join('');
-        const categoryLabel = escapeHtml(category);
-        const categoryBadge =
-          category === '档口特色'
-            ? `<span style="display:inline-block;vertical-align:middle;margin-left:8px;padding:2px 8px;border-radius:999px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);color:#6D28D9;font-size:12px;line-height:18px;font-weight:700;">档口特色</span>`
-            : '';
-
-        return `<div style="margin-top:14px;">
-  <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(17,24,39,0.55);font-weight:800;">${categoryLabel}${categoryBadge}</div>
-  <div style="margin-top:6px;">${chips}</div>
-</div>`;
-      })
-      .join('');
-
-    const brand = 'GrubPeek';
-    const footerLine = origin ? `<div style="margin-top:14px;font-size:12px;color:rgba(17,24,39,0.45);font-weight:700;">${escapeHtml(brand)} · ${escapeHtml(origin)}</div>` : `<div style="margin-top:14px;font-size:12px;color:rgba(17,24,39,0.45);font-weight:700;">${escapeHtml(brand)}</div>`;
-
-    const html = `<div style="max-width:560px;border-radius:20px;padding:18px 18px 16px 18px;background:linear-gradient(135deg,rgba(255,255,255,0.96),rgba(255,255,255,0.92)), radial-gradient(900px 200px at 0% 0%,rgba(249,115,22,0.18),transparent 65%), radial-gradient(700px 220px at 100% 0%,rgba(16,185,129,0.18),transparent 62%), radial-gradient(700px 220px at 100% 100%,rgba(59,130,246,0.16),transparent 60%), radial-gradient(600px 200px at 0% 100%,rgba(244,63,94,0.16),transparent 60%);border:1px solid rgba(17,24,39,0.08);box-shadow:0 18px 50px rgba(17,24,39,0.12);">
-  <div style="display:flex;align-items:center;gap:12px;">
-    <div style="width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,${meta.type === 'breakfast' ? '#F59E0B,#F97316' : meta.type === 'lunch' ? '#10B981,#22C55E' : meta.type === 'dinner' ? '#2563EB,#0EA5E9' : '#E11D48,#EC4899'});display:flex;align-items:center;justify-content:center;box-shadow:0 10px 22px rgba(17,24,39,0.16);">
-      <div style="width:10px;height:10px;border-radius:999px;background:rgba(255,255,255,0.95);"></div>
-    </div>
-    <div style="flex:1;">
-      <div style="font-size:14px;font-weight:900;color:rgba(17,24,39,0.92);line-height:1.2;">${escapeHtml(title)}</div>
-      <div style="margin-top:4px;font-size:12px;color:rgba(17,24,39,0.55);font-weight:700;">点名想吃的，直接转发这张清单</div>
-    </div>
-  </div>
-  <div style="margin-top:10px;height:1px;background:linear-gradient(90deg,transparent,rgba(17,24,39,0.12),transparent);"></div>
-  ${categoryBlocks || `<div style="margin-top:14px;padding:14px;border-radius:14px;border:1px dashed rgba(17,24,39,0.18);color:rgba(17,24,39,0.55);font-weight:800;font-size:13px;">暂无数据</div>`}
-  ${footerLine}
-</div>`;
 
     const textGroups = Object.entries(groups)
       .map(([category, dishes]) => {
@@ -225,7 +176,7 @@ export default function Home() {
       origin ? `— ${origin}` : '— GrubPeek',
     ].join('\n');
 
-    return { html, text, count: items.length };
+    return { text, count: items.length };
   };
 
   const legacyCopyText = (text: string) => {
@@ -252,19 +203,6 @@ export default function Home() {
     return ok;
   };
 
-  const openShareWindow = (html: string, title: string) => {
-    const w = window.open('', '_blank', 'noopener,noreferrer');
-    if (!w) return false;
-    w.document.open();
-    w.document.write(
-      `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${escapeHtml(
-        title,
-      )}</title></head><body style="margin:0;padding:24px;background:#fff;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;">${html}</body></html>`,
-    );
-    w.document.close();
-    return true;
-  };
-
   const copyShare = async (type: Menu['type']) => {
     if (isCopying) return;
     setIsCopying(true);
@@ -276,40 +214,19 @@ export default function Home() {
         return;
       }
 
-      const ClipboardItemCtor =
-        typeof window !== 'undefined' && 'ClipboardItem' in window
-          ? (window as unknown as { ClipboardItem: typeof ClipboardItem }).ClipboardItem
-          : null;
-
-      const isWeChat = typeof navigator !== 'undefined' && /MicroMessenger/i.test(navigator.userAgent);
-
-      if (isWeChat) {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(payload.text);
-        } else {
-          const ok = legacyCopyText(payload.text);
-          if (!ok) {
-            setShareOpen(false);
-            setManualCopyPayload({
-              title: `${meta.label} · ${format(selectedDate, 'yyyy年M月d日', { locale: zhCN })}`,
-              text: payload.text,
-              html: payload.html,
-            });
-            setShareStatus({ type: 'error', message: '当前环境禁止自动写入剪贴板，请手动复制' });
-            return;
-          }
-        }
-      } else if (navigator.clipboard && 'write' in navigator.clipboard && ClipboardItemCtor) {
-        const item = new ClipboardItemCtor({
-          'text/html': new Blob([payload.html], { type: 'text/html' }),
-          'text/plain': new Blob([payload.text], { type: 'text/plain' }),
-        });
-        await navigator.clipboard.write([item]);
-      } else if (navigator.clipboard?.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(payload.text);
       } else {
-        setShareStatus({ type: 'error', message: '当前浏览器不支持剪贴板复制' });
-        return;
+        const ok = legacyCopyText(payload.text);
+        if (!ok) {
+          setShareOpen(false);
+          setManualCopyPayload({
+            title: `${meta.label} · ${format(selectedDate, 'yyyy年M月d日', { locale: zhCN })}`,
+            text: payload.text,
+          });
+          setShareStatus({ type: 'error', message: '当前环境禁止自动写入剪贴板，请手动复制' });
+          return;
+        }
       }
 
       setShareOpen(false);
@@ -317,24 +234,22 @@ export default function Home() {
       setShareStatus({ type: 'success', message: `${meta.label}分享已复制` });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : '';
-      const isPolicyBlocked =
-        /permissions policy/i.test(message) || /clipboard api has been blocked/i.test(message) || /notallowederror/i.test(message);
-
-      if (isPolicyBlocked) {
-        const ok = legacyCopyText(payload.text);
-        if (ok) {
-          setShareOpen(false);
-          setManualCopyPayload(null);
-          setShareStatus({ type: 'success', message: `${meta.label}已复制（纯文本）` });
-          return;
-        }
+      
+      // Fallback to legacy copy or manual copy if clipboard API fails
+      const ok = legacyCopyText(payload.text);
+      if (ok) {
         setShareOpen(false);
-        setManualCopyPayload({ title: `${meta.label} · ${format(selectedDate, 'yyyy年M月d日', { locale: zhCN })}`, text: payload.text, html: payload.html });
-        setShareStatus({ type: 'error', message: '当前环境禁止自动写入剪贴板，请手动复制' });
+        setManualCopyPayload(null);
+        setShareStatus({ type: 'success', message: `${meta.label}已复制（纯文本）` });
         return;
       }
 
-      setShareStatus({ type: 'error', message: message ? `复制失败：${message}` : '复制失败' });
+      setShareOpen(false);
+      setManualCopyPayload({ 
+        title: `${meta.label} · ${format(selectedDate, 'yyyy年M月d日', { locale: zhCN })}`, 
+        text: payload.text 
+      });
+      setShareStatus({ type: 'error', message: '当前环境禁止自动写入剪贴板，请手动复制' });
     } finally {
       setIsCopying(false);
     }
@@ -541,7 +456,7 @@ export default function Home() {
                 </div>
 
                 <div className="mt-4 text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                  复制内容包含“富文本 + 纯文本”。若环境限制剪贴板写入，会自动尝试纯文本复制或提供手动复制。
+                  若环境限制剪贴板写入，会自动尝试纯文本复制或提供手动复制。
                 </div>
               </div>
             </div>
@@ -584,7 +499,7 @@ export default function Home() {
                   value={manualCopyPayload.text}
                   className="w-full h-44 resize-none rounded-2xl border border-gray-200/70 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 py-3 text-sm font-medium text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/40"
                 />
-                <div className="grid grid-cols-2 gap-3">
+                <div>
                   <button
                     onClick={() => {
                       const el = manualCopyRef.current;
@@ -599,18 +514,9 @@ export default function Home() {
                   >
                     全选
                   </button>
-                  <button
-                    onClick={() => {
-                      const ok = openShareWindow(manualCopyPayload.html, manualCopyPayload.title);
-                      setShareStatus({ type: ok ? 'success' : 'error', message: ok ? '已打开分享页' : '打开分享页失败' });
-                    }}
-                    className="w-full rounded-2xl border border-orange-200/70 dark:border-orange-900/40 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100/70 dark:hover:bg-orange-900/30 active:scale-[0.99] transition-all px-4 py-3 text-sm font-bold text-orange-700 dark:text-orange-200"
-                  >
-                    打开分享页
-                  </button>
                 </div>
                 <div className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
-                  你的浏览器/容器环境对剪贴板写入做了限制。点“全选”后复制即可；也可以打开分享页再复制。
+                  你的浏览器/容器环境对剪贴板写入做了限制。点“全选”后复制即可。
                 </div>
               </div>
             </div>
