@@ -28,12 +28,12 @@ export function Calendar({ selectedDate, onSelectDate, stallSpecialDates = [], a
 
   const days = React.useMemo(() => {
     if (viewMode === 'month') {
-      const start = startOfWeek(startOfMonth(currentMonth), { locale: zhCN });
-      const end = endOfWeek(endOfMonth(currentMonth), { locale: zhCN });
+      const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
+      const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
       return eachDayOfInterval({ start, end });
     } else {
-      const start = startOfWeek(selectedDate, { locale: zhCN });
-      const end = endOfWeek(selectedDate, { locale: zhCN });
+      const start = startOfWeek(selectedDate, { weekStartsOn: 0 });
+      const end = endOfWeek(selectedDate, { weekStartsOn: 0 });
       return eachDayOfInterval({ start, end });
     }
   }, [currentMonth, viewMode, selectedDate]);
